@@ -1,0 +1,27 @@
+plugins {
+    id 'groovy' 
+    id 'java'
+    id 'java-library'
+    id 'application'
+    id 'idea'
+}
+
+repositories {
+    mavenCentral() 
+}
+
+dependencies {
+
+    //api group: 'org.jgrapht', name: 'jgrapht-core', version: '1.+'
+    //api group: 'org.jgrapht', name: 'jgrapht-io', version: '1.+'
+    
+    implementation 'org.codehaus.groovy:groovy-all:3.0.9' 
+
+    implementation 'com.google.guava:guava:30.1.1-jre'
+    implementation 'io.github.forsyde:forsyde-io-java-core:0.5.7'
+
+}
+
+application {
+    mainClass = 'DSL.Prototype' 
+}
