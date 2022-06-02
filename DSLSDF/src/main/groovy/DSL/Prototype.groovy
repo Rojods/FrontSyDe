@@ -72,6 +72,23 @@ class Prototype {
             connect gx, "out" to abs, "in1"
             connect gy, "out" to abs, "in2"
         }
-        println "Sobel Application" + sobelapplication
-    }   
+        println "Sobel Application " + sobelapplication
+
+        def aa = SDF.Actor {
+            state "s" type Integer value 1
+            port "o1" produces 2
+            port "in1" consumes 3
+            body "s = in1 + 1; o = s;"
+        }
+
+        def bb = SDF.Actor {
+            id "second"
+            port "in1" consumes 1
+        }
+
+        aa.o1 >> bb.in1
+
+
+        println(aa.connected)
+    }
 }
