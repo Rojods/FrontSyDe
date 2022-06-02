@@ -1,0 +1,153 @@
+plugins {
+  id 'java-library'
+  id 'maven-publish'
+  id 'signing'
+  id 'java'
+  id 'idea'
+  id 'eclipse'
+  id 'io.github.gradle-nexus.publish-plugin' version '1.1.0'
+}
+
+// due to how maven central works, the groupId must be the same as the
+// website which we host
+group = 'io.github.forsyde'
+archivesBaseName = project.name
+version = '0.1.0'
+project.ext.niceName = "Java Parent"
+
+
+tasks.register('getVersion') {
+    doFirst {
+        println version
+    }
+}
+
+
+// In this section you declare where to find the dependencies of your project
+repositories {
+  // Use 'jcenter' for resolving your dependencies.
+  // You can declare any Maven/Ivy/file repository here.
+  mavenCentral()
+}
+
+// In this section you declare the dependencies for your production and test code
+dependencies {
+  testImplementation("org.junit.jupiter:junit-jupiter:5.8.2")
+
+  //testImplementation 'junit:junit:4.13.2'
+
+  //testImplementation project(":java-core")
+}
+
+test {
+  useJUnitPlatform()
+}
+
+sourceCompatibility = 1.11
+
+sourceSets {
+  test {
+    java {
+      srcDirs += ['java-tests']
+    }
+  }
+}
+
+subprojects {
+  apply plugin: 'java'
+  apply plugin: 'idea'
+  apply plugin: 'eclipse'
+  apply plugin: 'publishing'
+  apply plugin: 'signing'
+  apply plugin: 'java-library'
+  apply plugin: 'maven-publish'
+
+  group = 'io.github.forsyde'
+  archivesBaseName = rootProject.name + '-' + project.name
+  version = rootProject.version
+
+  sourceCompatibility = 1.11
+
+  repositories {
+    mavenCentral()
+  }
+
+  publishing {
+    publications {
+      mavenJava(MavenPublication) {
+        artifactId = archivesBaseName
+        from components.java
+        pom {
+          name = "FrontSyDe " + project.niceName
+          description = "FrontSyDe " + project.niceName
+          url = 'https://github.com/forsyde/FrontSyDe'
+          packaging = 'jar'
+          scm {
+            connection = 'scm:git:https://github.com/forsyde/forsyde-io.git'
+            developerConnection = 'scm:git:git@github.com:forsyde/forsyde-io.git'
+            url = 'https://github.com/forsyde/forsyde-io'
+          }
+          licenses {
+            license {
+              name = 'The MIT License'
+              url = 'https://choosealicense.com/licenses/mit/'
+            }
+          }
+          developers {
+            developer {
+              id = 'Jordao'
+              name = 'Rodolfo Jordao'
+              email = 'jordao@kth.se'
+            }
+          }
+        }
+      }
+    }
+    repositories {
+      maven {
+        name = 'OSSRH'
+        url = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
+        credentials {
+          username = rootProject.hasProperty('ossrhUsername') ? ossrhUsername : System.getenv('MAVEN_USERNAME') ?: System.getenv('OSSRH_USERNAME') ?: ''
+          password = rootProject.hasProperty('ossrhPassword') ? ossrhPassword : System.getenv('MAVEN_PASSWORD') ?: System.getenv('OSSRH_PASSWORD') ?: ''
+        }
+      }
+    }
+  }
+
+  java {
+    withSourcesJar()
+    withJavadocJar()
+  }
+
+  artifacts {
+    archives javadocJar, sourcesJar
+  }
+
+  signing {
+    // small hack to work offline or online
+    if (rootProject.hasProperty('signing.keyId') && rootProject.findProperty("signing.useGpgCommand") == true) {
+      useGpgCmd()
+    } else if (System.getenv('GPG_SIGNING_KEY') != null || rootProject.findProperty('signing.key') != null) {
+      useInMemoryPgpKeys(
+              System.getenv('GPG_SIGNING_KEY') ?: rootProject.findProperty('signing.key'),
+              System.getenv('GPG_SIGNING_PASSWORD') ?: rootProject.findProperty('signing.password') ?: '' //default to an empty password
+      )
+    }
+    sign publishing.publications.mavenJava
+    sign configurations.archives
+  }
+
+  tasks.publish.dependsOn tasks.signArchives
+  tasks.publishMavenJavaPublicationToOSSRHRepository.dependsOn tasks.signArchives
+
+}
+
+nexusPublishing {
+  repositories {
+    sonatype {
+      username = rootProject.hasProperty('ossrhUsername') ? ossrhUsername : System.getenv('MAVEN_USERNAME') ?: System.getenv('OSSRH_USERNAME') ?: ''
+      password = rootProject.hasProperty('ossrhPassword') ? ossrhPassword : System.getenv('MAVEN_PASSWORD') ?: System.getenv('OSSRH_PASSWORD') ?: ''
+    }
+  }
+}
